@@ -1,49 +1,38 @@
-'use strict';
-
-const xml2js = require('xml2js');
-const fs = require('fs-extra');
-const gm = require('gm');
+import * as xml2js from 'xml2js';
+import * as fs from 'fs-extra';
+import gm from 'gm';
+import { ErrorCallback } from '../types';
 
 /**
  * Crops a tile with the gutter size.
  * 
- * @param {String} oldFile File to be crop
- * @param {String} newFile New cropped file
- * @param {Number} tileSizePx Size of the new tile
- * @param {Number} gutterSizePx Size of gutter in the old tile
- * @param {Function} callback function(err) {}
- * @example
- * const oldFile = __dirname + '/cropTileOld.png';
- * const newFile = __dirname + '/cropTileNew.png';
- * const tileSizePx = 1000; // Size of the new tile
- * const gutterSizePx = 150;
- * 
- * cropTile(oldFile, newFile, tileSizePx, gutterSizePx, (err)=>{
- *   if(err){
- *     console.error(err);
- *   }else{
- *     console.log('Tile cropped!');
- *   }
- * });
+ * @param oldFile File to be crop
+ * @param newFile New cropped file
+ * @param tileSizePx Size of the new tile
+ * @param gutterSizePx Size of gutter in the old tile
+ * @param callback function(err) {}
  */
-function cropTile(oldFile, newFile, tileSizePx, gutterSizePx, callback) {
-
+export function cropTile(
+  oldFile: string,
+  newFile: string,
+  tileSizePx: number,
+  gutterSizePx: number,
+  callback: ErrorCallback
+): void {
   if (oldFile.endsWith('.svg') && newFile.endsWith('.svg')) {
     // vector images
     fs.readFile(oldFile, { encoding: 'utf8' }, (err, content) => {
       if (err) {
         callback(err);
       } else {
-
         const parser = new xml2js.Parser({ async: false });
 
-        parser.parseString(content, (err, result) => {
+        parser.parseString(content, (err: Error | null, result: any) => {
           if (err) {
             callback(err);
           } else {
             const builder = new xml2js.Builder();
             try {
-
               const viewBox = result.svg['$'].viewBox.split(' ');
               for (let i = 0; i < viewBox.length; i++) {
                 viewBox[i] = parseFloat(viewBox[i]);
@@ -59,39 +48,34 @@ function cropTile(oldFile, newFile, tileSizePx, gutterSizePx, callback) {
               const xml = builder.buildObject(result);
               fs.writeFile(newFile, xml, { encoding: 'utf8' }, callback);
             } catch (err) {
-              callback(err);
+              callback(err as Error);
             }
           }
         });
       }
     });
-
-
   } else {
-
     // raster images (and from vector to raster image as well)
-    let inExt = oldFile.substring(oldFile.length - 3, oldFile.length);
-    let outExt = newFile.substring(newFile.length - 3, newFile.length);
+    const inExt = oldFile.substring(oldFile.length - 3, oldFile.length);
+    const outExt = newFile.substring(newFile.length - 3, newFile.length);
 
     /*
-     * The conversion from  to jpg and tif is wrong by default. The
+     * The conversion from png to jpg and tif is wrong by default. The
      * transparency will convert to black. It is correct, if the transparency will
      * convert to white.
      * 
      * That will fixed with the following code.
      */
-    if ((inExt == '' && outExt == 'jpg') || (inExt == '' && outExt == 'tif')) {
+    if ((inExt === 'png' && outExt === 'jpg') || (inExt === 'png' && outExt === 'tif')) {
       gm(oldFile).flatten().background('white').crop(tileSizePx, tileSizePx, gutterSizePx, gutterSizePx).write(newFile, (err) => {
-        callback(err);
+        callback(err || null);
       });
     } else {
-
       gm(oldFile).crop(tileSizePx, tileSizePx, gutterSizePx, gutterSizePx).write(newFile, (err) => {
-        callback(err);
+        callback(err || null);
       });
     }
   }
-
 }
 
-module.exports = cropTile;
+export default cropTile;

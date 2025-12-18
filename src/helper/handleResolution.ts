@@ -1,27 +1,37 @@
-'use strict';
-
-const fs = require('fs-extra');
-const handleWMS = require(__dirname + '/handleWMS.js');
+import * as fs from 'fs-extra';
+import { handleWMS } from './handleWMS';
+import { 
+  TaskOptions, 
+  WMSDownloaderOptions, 
+  ProgressObject, 
+  ErrorCallback 
+} from '../types';
 
 /**
  * It handles recursive all resolutions of a task.
  * 
- * @param {Object} options
- * @param {String} ws Task workspace
- * @param {Number} resIdx Index of resolution
- * @param {Object} config See options of the {@link WMSDownloader|WMSDownloader constructor} 
- * @param {Array} progress Array of the progress of all WMSDownloader tasks.
- * @param {Function} callback function(err){}
+ * @param options Task options
+ * @param ws Task workspace
+ * @param resIdx Index of resolution
+ * @param config See options of the WMSDownloader constructor
+ * @param progress Array of the progress of all WMSDownloader tasks
+ * @param callback function(err){}
  */
-function handleResolution(options, ws, resIdx, config, progress, callback) {
-
+export function handleResolution(
+  options: TaskOptions,
+  ws: string,
+  resIdx: number,
+  config: WMSDownloaderOptions,
+  progress: ProgressObject,
+  callback: ErrorCallback
+): void {
   // Resolution object
-  let res = options.tiles.resolutions[resIdx];
+  const res = options.tiles.resolutions[resIdx];
 
   // Workspace of this resolutions
-  let resWs;
+  let resWs: string;
 
-  if (options.tiles.resolutions.length == 1) {
+  if (options.tiles.resolutions.length === 1) {
     resWs = ws;
   } else {
     resWs = ws + '/' + res.id;
@@ -32,20 +42,15 @@ function handleResolution(options, ws, resIdx, config, progress, callback) {
     // Error
     if (err) {
       // Directory could not be created.
-
-      // Call callback function with error.
       callback(err);
     } else {
       // No errors
 
       // Handle all wms
       handleWMS(options, resWs, res, 0, config, progress, (err) => {
-
         // Error
         if (err) {
           // It could not be handled all wms.
-
-          // Call callback function with error.
           callback(err);
         } else {
           // No errors
@@ -58,19 +63,13 @@ function handleResolution(options, ws, resIdx, config, progress, callback) {
             handleResolution(options, ws, resIdx, config, progress, callback);
           } else {
             // New resolution index does not exists
-
-            // Call callback function without errors. All resolution
-            // were
-            // handled.
+            // Call callback function without errors.
             callback(null);
           }
         }
-
       });
-
     }
   });
-
 }
 
-module.exports = handleResolution;
+export default handleResolution;

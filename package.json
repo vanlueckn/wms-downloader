@@ -2,8 +2,11 @@
   "name": "wms-downloader",
   "version": "1.1.8",
   "description": "It allows you to download tiles of a Web Map Service (WMS).",
-  "main": "index.js",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "scripts": {
+    "build": "tsc",
+    "prepublishOnly": "npm run build",
     "test": "echo \"Error: no test specified\" && exit 1",
     "build-api-doc": "documentation build src/** --output docs/api --config docs/api-config.yaml --format html --github"
   },
@@ -15,7 +18,13 @@
     "xml2js": "^0.4.23"
   },
   "devDependencies": {
-    "documentation": "^13.2.5"
+    "@types/fs-extra": "^9.0.13",
+    "@types/gm": "^1.25.4",
+    "@types/node": "^18.0.0",
+    "@types/request": "^2.48.12",
+    "@types/xml2js": "^0.4.14",
+    "documentation": "^13.2.5",
+    "typescript": "^5.0.0"
   },
   "keywords": [
     "wms",

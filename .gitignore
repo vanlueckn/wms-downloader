@@ -4,3 +4,6 @@ examples/svg.js
 examples/helper/cropTileNew.png
 examples/helper/cropTileVectorNew.svg
 package-lock.json
+
+# TypeScript build output
+dist/

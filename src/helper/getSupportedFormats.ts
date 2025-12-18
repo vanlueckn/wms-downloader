@@ -1,0 +1,45 @@
+import { SupportedFormat } from '../types';
+
+const supportedFormats: SupportedFormat[] = [{
+  'title': 'PNG',
+  'fileExt': 'png',
+  'worldFileExt': 'pgw',
+  'mimeType': 'image/png'
+}, {
+  'title': 'PNG 8-Bit',
+  'fileExt': 'png',
+  'worldFileExt': 'pgw',
+  'mime_type': 'image/png; mode=8bit'
+}, {
+  'title': 'JPG',
+  'fileExt': 'jpg',
+  'worldFileExt': 'jgw',
+  'mimeType': 'image/jpeg'
+}, {
+  'title': 'GIF',
+  'fileExt': 'gif',
+  'worldFileExt': 'gfw',
+  'mimeType': 'image/gif'
+}, {
+  'title': 'TIFF',
+  'fileExt': 'tif',
+  'worldFileExt': 'tfw',
+  'mimeType': 'image/tiff'
+},
+//SVG support: experimental
+{
+  'title': 'SVG',
+  'fileExt': 'svg',
+  'worldFileExt': 'sgw',
+  'mimeType': 'image/svg+xml'
+}];
+
+/**
+ * Returns an array with all supported formats
+ * @returns Array of all supported formats
+ */
+export function getSupportedFormats(): SupportedFormat[] {
+  return supportedFormats;
+}
+
+export default getSupportedFormats;
