@@ -1,63 +1,72 @@
-import * as request from 'request';
+import axios, { AxiosInstance } from 'axios';
+import * as https from 'https';
 import { WMSDownloaderOptions } from '../types';
 
-// Request object from request module.
-let requestInstance: request.RequestAPI<request.Request, request.CoreOptions, request.RequiredUriUrl> | null = null;
-let requestProxyInstance: request.RequestAPI<request.Request, request.CoreOptions, request.RequiredUriUrl> | null = null;
+// Axios instances
+let axiosInstance: AxiosInstance | null = null;
+let axiosProxyInstance: AxiosInstance | null = null;
 
 /**
- * Returns the correct request object with the right proxy settings.
+ * Creates axios configuration based on WMSDownloader options.
  * 
  * @param config WMSDownloader options
  * @param url URL of tile
- * @returns Object from request module
+ * @returns Axios instance configured with appropriate settings
  */
-export function getRequestObject(
+export function getAxiosInstance(
   config: WMSDownloaderOptions,
   url: string
-): request.RequestAPI<request.Request, request.CoreOptions, request.RequiredUriUrl> {
-  if (!requestInstance) {
-    // Init request object
-    requestInstance = request.defaults({
+): AxiosInstance {
+  if (!axiosInstance) {
+    // Init axios instance
+    axiosInstance = axios.create({
       headers: {
         'User-Agent': config.request.userAgent
       },
-      strictSSL: false,
-      timeout: config.request.timeout
+      timeout: config.request.timeout,
+      httpsAgent: new https.Agent({
+        rejectUnauthorized: false
+      }),
+      responseType: 'stream'
     });
   }
 
-  if (!requestProxyInstance) {
-    // If internet proxy is set
-    if (config.request.proxy) {
-      // String of username and password
-      let userPass = '';
-      if (config.request.proxy.http.user) {
-        if (config.request.proxy.http.password) {
-          userPass = encodeURIComponent(config.request.proxy.http.user) + ':' + encodeURIComponent(config.request.proxy.http.password) + '@';
-        }
-      }
-
-      // Init request object with internet proxy
-      requestProxyInstance = request.defaults({
-        headers: {
-          'User-Agent': config.request.userAgent
-        },
-        strictSSL: false,
-        timeout: config.request.timeout,
-        proxy: 'http://' + userPass + config.request.proxy.http.host + ':' + config.request.proxy.http.port
-      });
+  if (!axiosProxyInstance && config.request.proxy) {
+    // Proxy auth configuration
+    let proxyAuth: { username: string; password: string } | undefined;
+    if (config.request.proxy.http.user && config.request.proxy.http.password) {
+      proxyAuth = {
+        username: config.request.proxy.http.user,
+        password: config.request.proxy.http.password
+      };
     }
+
+    // Init axios instance with internet proxy
+    axiosProxyInstance = axios.create({
+      headers: {
+        'User-Agent': config.request.userAgent
+      },
+      timeout: config.request.timeout,
+      httpsAgent: new https.Agent({
+        rejectUnauthorized: false
+      }),
+      responseType: 'stream',
+      proxy: {
+        host: config.request.proxy.http.host,
+        port: config.request.proxy.http.port,
+        auth: proxyAuth
+      }
+    });
   }
 
-  let ret = requestInstance;
+  let ret = axiosInstance;
 
-  if (config.request.proxy && requestProxyInstance) {
-    ret = requestProxyInstance;
+  if (config.request.proxy && axiosProxyInstance) {
+    ret = axiosProxyInstance;
     const excludeList = config.request.proxy.http.exclude || [];
     for (let int = 0; int < excludeList.length; int++) {
       if (url.includes(excludeList[int])) {
-        ret = requestInstance;
+        ret = axiosInstance;
         break;
       }
     }
@@ -66,4 +75,15 @@ export function getRequestObject(
   return ret;
 }
 
-export default getRequestObject;
+/**
+ * @deprecated Use getAxiosInstance instead
+ * Returns the axios instance (kept for API compatibility).
+ */
+export function getRequestObject(
+  config: WMSDownloaderOptions,
+  url: string
+): AxiosInstance {
+  return getAxiosInstance(config, url);
+}
+
+export default getAxiosInstance;

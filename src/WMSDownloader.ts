@@ -1,12 +1,12 @@
 import * as os from 'os';
-import * as request from 'request';
+import { AxiosInstance } from 'axios';
 import packageJson from '../package.json';
 import { start as startFn } from './WMSDownloader/start';
 import { cancel as cancelFn } from './WMSDownloader/cancel';
 import { getProgress as getProgressFn } from './WMSDownloader/getProgress';
 import { isValid } from './helper/isValid';
 import { getSupportedFormats } from './helper/getSupportedFormats';
-import { getRequestObject } from './helper/getRequestObject';
+import { getAxiosInstance } from './helper/getRequestObject';
 import configSchema from './schemas/config.json';
 import {
   WMSDownloaderOptions,
@@ -72,12 +72,12 @@ class WMSDownloader {
   }
 
   /**
-   * Returns the object of the request module.
+   * Returns the axios instance for making HTTP requests.
    * @param url Url for request
-   * @returns object of the request module.
+   * @returns Axios instance configured for the request.
    */
-  getRequestObject(url: string): request.RequestAPI<request.Request, request.CoreOptions, request.RequiredUriUrl> {
-    return getRequestObject(this.options, url);
+  getRequestObject(url: string): AxiosInstance {
+    return getAxiosInstance(this.options, url);
   }
 
   /**
@@ -168,4 +168,5 @@ class WMSDownloader {
   // TODO: Remove deprecated functions --------------------------------------------------------------
 }
 
-export = WMSDownloader;
+export default WMSDownloader;
+export { WMSDownloader };

@@ -1,52 +1,41 @@
 import * as fs from 'fs-extra';
-import * as request from 'request';
-import { ErrorCallback } from '../types';
+import { AxiosInstance, AxiosResponse } from 'axios';
 
 /**
- * Downloads and writes a tile.
+ * Downloads and writes a tile using axios.
  * 
  * @param file Path where the tile is to be stored.
  * @param url URL of tile
- * @param requestObj Object from request module
+ * @param axiosInstance Axios instance configured for the request
  * @param callback function(err, res){}
  */
 export function writeTile(
   file: string,
   url: string,
-  requestObj: request.RequestAPI<request.Request, request.CoreOptions, request.RequiredUriUrl>,
-  callback: (err: Error | null, res: request.Response | null) => void
+  axiosInstance: AxiosInstance,
+  callback: (err: Error | null, res: AxiosResponse | null) => void
 ): void {
-  // Result of request
-  let res: request.Response | null = null;
+  axiosInstance.get(url)
+    .then((response: AxiosResponse) => {
+      // Create write stream
+      const fileStream = fs.createWriteStream(file);
 
-  // FileWriteStream
-  const fileStream = fs.createWriteStream(file);
+      // Register finish callback of FileWriteStream
+      fileStream.on('finish', () => {
+        callback(null, response);
+      });
 
-  // Register finish callback of FileWriteStream
-  fileStream.on('finish', () => {
-    callback(null, res);
-  });
+      // Register error callback of FileWriteStream
+      fileStream.on('error', (err: Error) => {
+        callback(err, response);
+      });
 
-  // Register error callback of FileWriteStream
-  fileStream.on('error', (err: Error) => {
-    callback(err, res);
-  });
-
-  // Request object
-  const req = requestObj.get(url);
-
-  // Register error callback of request
-  req.on('error', (err: Error) => {
-    callback(err, res);
-  });
-
-  // Register response callback of request
-  req.on('response', (response: request.Response) => {
-    res = response;
-  });
-
-  // Start download
-  req.pipe(fileStream);
+      // Pipe the response data to the file
+      response.data.pipe(fileStream);
+    })
+    .catch((err: Error) => {
+      callback(err, null);
+    });
 }
 
 export default writeTile;

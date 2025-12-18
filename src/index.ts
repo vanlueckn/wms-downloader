@@ -1,3 +1,5 @@
-import WMSDownloader = require('./WMSDownloader');
+import WMSDownloader from './WMSDownloader';
 
-export = WMSDownloader;
+export default WMSDownloader;
+export { WMSDownloader };
+export * from './types';

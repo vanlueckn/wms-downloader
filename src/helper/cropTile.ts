@@ -1,7 +1,57 @@
 import * as xml2js from 'xml2js';
 import * as fs from 'fs-extra';
-import gm from 'gm';
+import spawn from 'cross-spawn';
 import { ErrorCallback } from '../types';
+
+/**
+ * Runs an ImageMagick/GraphicsMagick command using cross-spawn.
+ * Tries 'magick' (ImageMagick 7), then 'convert' (ImageMagick 6 / GraphicsMagick).
+ * 
+ * @param args Command arguments for the convert operation
+ * @param callback function(err) {}
+ */
+function runImageCommand(args: string[], callback: ErrorCallback): void {
+  // Try ImageMagick 7 first (magick command)
+  const magickProcess = spawn('magick', args, { stdio: 'pipe' });
+  
+  let errorOutput = '';
+  
+  magickProcess.stderr?.on('data', (data) => {
+    errorOutput += data.toString();
+  });
+
+  magickProcess.on('error', () => {
+    // magick command not found, try convert (ImageMagick 6 / GraphicsMagick)
+    const convertProcess = spawn('convert', args, { stdio: 'pipe' });
+    
+    let convertErrorOutput = '';
+    
+    convertProcess.stderr?.on('data', (data) => {
+      convertErrorOutput += data.toString();
+    });
+
+    convertProcess.on('error', (err) => {
+      callback(new Error(`Neither 'magick' nor 'convert' command found. Please install ImageMagick or GraphicsMagick. ${err.message}`));
+    });
+
+    convertProcess.on('close', (code) => {
+      if (code === 0) {
+        callback(null);
+      } else {
+        callback(new Error(`convert command failed with code ${code}: ${convertErrorOutput}`));
+      }
+    });
+  });
+
+  magickProcess.on('close', (code) => {
+    if (code === 0) {
+      callback(null);
+    } else if (code !== null) {
+      callback(new Error(`magick command failed with code ${code}: ${errorOutput}`));
+    }
+    // If code is null, the error handler will have been triggered
+  });
+}
 
 /**
  * Crops a tile with the gutter size.
@@ -59,6 +109,9 @@ export function cropTile(
     const inExt = oldFile.substring(oldFile.length - 3, oldFile.length);
     const outExt = newFile.substring(newFile.length - 3, newFile.length);
 
+    // Crop geometry: WxH+X+Y
+    const cropGeometry = `${tileSizePx}x${tileSizePx}+${gutterSizePx}+${gutterSizePx}`;
+
     /*
      * The conversion from png to jpg and tif is wrong by default. The
      * transparency will convert to black. It is correct, if the transparency will
@@ -67,13 +120,25 @@ export function cropTile(
      * That will fixed with the following code.
      */
     if ((inExt === 'png' && outExt === 'jpg') || (inExt === 'png' && outExt === 'tif')) {
-      gm(oldFile).flatten().background('white').crop(tileSizePx, tileSizePx, gutterSizePx, gutterSizePx).write(newFile, (err) => {
-        callback(err || null);
-      });
+      // Flatten with white background, then crop
+      const args = [
+        oldFile,
+        '-background', 'white',
+        '-flatten',
+        '-crop', cropGeometry,
+        '+repage',
+        newFile
+      ];
+      runImageCommand(args, callback);
     } else {
-      gm(oldFile).crop(tileSizePx, tileSizePx, gutterSizePx, gutterSizePx).write(newFile, (err) => {
-        callback(err || null);
-      });
+      // Simple crop
+      const args = [
+        oldFile,
+        '-crop', cropGeometry,
+        '+repage',
+        newFile
+      ];
+      runImageCommand(args, callback);
     }
   }
 }

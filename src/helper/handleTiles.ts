@@ -2,7 +2,7 @@ import * as fs from 'fs-extra';
 import { getFormatDetails } from './getFormatDetails';
 import { createWorldFile } from './createWorldFile';
 import { createGetMap } from './createGetMap';
-import { getRequestObject } from './getRequestObject';
+import { getAxiosInstance } from './getRequestObject';
 import { cropTile } from './cropTile';
 import { writeTile } from './writeTile';
 import { 
@@ -87,7 +87,7 @@ export function handleTiles(
   writeTile(
     ws + '/' + idOfTile + '_gutter.' + inputFormatDetails.fileExt,
     getMap,
-    getRequestObject(config, getMap),
+    getAxiosInstance(config, getMap),
     (err, _result) => {
       // Error
       if (err) {
